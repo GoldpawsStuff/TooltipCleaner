@@ -1,0 +1,17 @@
+package-as: TooltipCleaner
+enable-nolib-creation: no
+
+move-folders:
+    TooltipCleaner/TooltipCleaner: TooltipCleaner
+
+manual-changelog:
+    filename: CHANGELOG.md
+    markup-type: markdown
+
+license-output: LICENSE.txt
+
+ignore:
+    - CHANGELOG.md
+    - CODE_OF_CONDUCT.md
+    - LICENSE.md
+    - README.md
