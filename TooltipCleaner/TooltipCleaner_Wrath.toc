@@ -11,5 +11,17 @@
 ## X-License: Custom
 
 ## SavedVariables: TooltipCleaner_DB
+## OptionalDeps: Ace3
 
-TooltipCleaner_Wrath.xml
+# TaintLess [22-11-27]
+# https://www.townlong-yak.com/addons/taintless
+TaintLess.xml
+
+# Libraries
+Libs\Libs.xml
+
+# Addon localization
+Locale\Locale.xml
+
+# Addon core
+Core\Core.xml
