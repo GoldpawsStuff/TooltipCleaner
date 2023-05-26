@@ -10,5 +10,7 @@ L["Hide full durability."] = true
 L["Hides item durability when the item has full durability."] = true
 L["Hide grayed out item stats."] = true
 L["Hides grayed out item stats your character can't currently use."] = true
+L["Hide unachieved set bonuses."] = true
+L["Hides set bonuses you haven't collected enough items to receive yet."] = true
 L["Hide factions."] = true
 L["Hides a unit's faction allegiance."] = true
