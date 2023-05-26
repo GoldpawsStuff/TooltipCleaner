@@ -10,6 +10,7 @@ This is a new project I made on request, and you should consider it to be in dev
 * Remove item durability from undamaged items.
 * Remove item level requirement if your character is above it.
 * Remove item stats not currently active on the item.
+* Remove item set bonuses you lack the number of set items for.
 * Remove unit PvP status.
 * Remove unit faction allegiance.
 
