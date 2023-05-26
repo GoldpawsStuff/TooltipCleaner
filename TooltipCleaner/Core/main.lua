@@ -363,16 +363,14 @@ ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 			local r, g, b = line.leftColor.r, line.leftColor.g, line.leftColor.b
 			if (r == g and g == b and r > 0.49 and r < 0.51) then
 				local tipText = _G[tipName.."TextLeft"..i]
-			end
-
-			if (db.hideUnusedStats and string_match(msg, "^%+?%-?%d+%s+%w+")) then
-				tipText:SetText("")
-				tipText:Hide()
-			end
-
-			if (db.hideMissingSetBonuses and string_match(msg, "^%(%d+%)%s+.+")) then
-				tipText:SetText("")
-				tipText:Hide()
+				if (db.hideUnusedStats and string_match(msg, "^%+?%-?%d+%s+%w+")) then
+					tipText:SetText("")
+					tipText:Hide()
+				end
+				if (db.hideMissingSetBonuses and string_match(msg, "^%(%d+%)%s+.+")) then
+					tipText:SetText("")
+					tipText:Hide()
+				end
 			end
 		end
 
