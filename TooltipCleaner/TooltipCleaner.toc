@@ -6,14 +6,14 @@
 ## Author: Lars Norberg
 
 ## X-Category: Interface Enhancements
-## X-Curse-Project-ID:
-## X-Wago-ID:
+## X-Curse-Project-ID: 866199
+## X-Wago-ID: jK8XX5Ky
 ## X-License: Custom
 
 ## SavedVariables: TooltipCleaner_DB
 ## OptionalDeps: Ace3
 
-# TaintLess [22-11-27]
+# TaintLess [23-05-18]
 # https://www.townlong-yak.com/addons/taintless
 TaintLess.xml
 

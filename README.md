@@ -6,9 +6,12 @@ The goal is to clean up the tooltips for those that prefer a cleaner, more minim
 This is a new project I made on request, and you should consider it to be in development and open for suggestions as to what to clean up or reformat. If it's in line with the description above, I'm willing to consider adding whatever you might suggest!
 
 ## What it does
-* Remove vendor sell price
-* Remove durability from undamaged items
-* Remove level requirement if player is above it
+* Remove item sell price.
+* Remove item durability from undamaged items.
+* Remove item level requirement if your character is above it.
+* Remove item stats not currently active on the item.
+* Remove unit PvP status.
+* Remove unit faction allegiance.
 
 ## Connect & Support
 * Patreon: [patreon.com/goldpawsstuff](https://www.patreon.com/goldpawsstuff)
