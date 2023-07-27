@@ -52,7 +52,7 @@ local WoW10 = select(4,GetBuildInfo()) >= 100000
 local L_SELL_PRICE = SELL_PRICE -- "Sell Price"
 local L_ITEM_MIN_LEVEL = "^" .. string_gsub(ITEM_MIN_LEVEL, "%%d", "(%%d+)") -- "Requires Level %d"
 local L_ITEM_MIN_SKILL = "^" .. string_gsub(string_gsub(ITEM_MIN_SKILL, "%%s", "(%%s+)"), "%%d", "(%%d+)") -- "Requires %s (%d)"
-local L_DURABILITY_TEMPLATE = string_gsub(DURABILITY_TEMPLATE, "%%d", "(%%d+)") -- "Durability %d / %d"
+local L_DURABILITY_TEMPLATE = string_gsub(DURABILITY_TEMPLATE, "%%([%d%$]-)d", "(%%d+)") -- "Durability %d / %d"
 
 -- Backdrop template for Lua and XML
 -- Allows us to always set these templates, even in Classic.
