@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.6-Release] 2023-08-24
+- Updated for Classic client patch 1.14.4.
+
 ## [1.0.5-Release] 2023-07-27
 ### Fixed
 - Fixed an issue that would make durability scanning bug out on some non-English game clients.
