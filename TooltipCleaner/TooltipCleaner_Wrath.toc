@@ -11,9 +11,9 @@
 ## X-License: Custom
 
 ## SavedVariables: TooltipCleaner_DB
-## OptionalDeps: Ace3
+## OptionalDeps: TaintLess, Ace3
 
-# TaintLess [23-05-18]
+# TaintLess [23-09-09]
 # https://www.townlong-yak.com/addons/taintless
 TaintLess.xml
 
