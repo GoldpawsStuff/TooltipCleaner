@@ -1,6 +1,7 @@
 local Addon, ns = ...
 
 local L = LibStub("AceLocale-3.0"):NewLocale(Addon, "zhTW")
+if (not L) then return end
 
 L["Hide Blizzard vendor prices."] = "隱藏物品售價"
 L["Hides vendors prices from default tooltip when enabled."] = "隱藏暴雪提供的物品售價"
