@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.12-Release] 2023-11-14
+### Fixed
+- Fixed an issue that would cause loading of locales to bug out at startup.
+
 ## [1.0.11-Release] 2023-11-13
 ### Added
 - Added zhCN and zhTW localization by EKE00372.
