@@ -34,7 +34,11 @@ local AceGUI = LibStub("AceGUI-3.0")
 ns = LibStub("AceAddon-3.0"):NewAddon(ns, Addon, "LibMoreEvents-1.0", "AceConsole-3.0", "AceHook-3.0")
 
 -- Lua API
+local next = next
+local rawget = rawget
+local rawset = rawset
 local select = select
+local setmetatable = setmetatable
 local string_gsub = string.gsub
 local string_match = string.match
 local tonumber = tonumber
@@ -47,12 +51,32 @@ local IsTBC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
 local IsWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)
 local WoW10 = select(4,GetBuildInfo()) >= 100000
 
--- Localized search patterns
------------------------------------------------------------
-local L_SELL_PRICE = SELL_PRICE -- "Sell Price"
-local L_ITEM_MIN_LEVEL = "^" .. string_gsub(ITEM_MIN_LEVEL, "%%d", "(%%d+)") -- "Requires Level %d"
-local L_ITEM_MIN_SKILL = "^" .. string_gsub(string_gsub(ITEM_MIN_SKILL, "%%s", "(%%s+)"), "%%d", "(%%d+)") -- "Requires %s (%d)"
-local L_DURABILITY_TEMPLATE = string_gsub(DURABILITY_TEMPLATE, "%%([%d%$]-)d", "(%%d+)") -- "Durability %d / %d"
+-- Convert a WoW global string to a search pattern
+local makePattern = function(msg)
+	msg = string_gsub(msg, "%%([%d%$]-)d", "(%%d+)")
+	msg = string_gsub(msg, "%%([%d%$]-)s", "(.+)")
+	return msg
+end
+
+-- Search Pattern Cache.
+-- This will generate the pattern on the first lookup.
+local P = setmetatable({}, { __index = function(t,k)
+	rawset(t,k,makePattern(k))
+	return rawget(t,k)
+end })
+
+-- WoW Globals
+local G = {
+	DURABILITY_TEMPLATE = DURABILITY_TEMPLATE, -- "Durability %d / %d"
+	ITEM_MIN_LEVEL = ITEM_MIN_LEVEL, -- "Requires Level %d"
+	ITEM_MIN_SKILL = ITEM_MIN_SKILL, -- "Requires %s (%d)"
+	LEVEL_GAINED = LEVEL_GAINED, -- "Level %d"
+	SELL_PRICE = SELL_PRICE, -- "Sell Price"
+	UNIT_TYPE_LETHAL_LEVEL_TEMPLATE = UNIT_TYPE_LETHAL_LEVEL_TEMPLATE, -- "Level ?? %s"
+	UNIT_TYPE_LEVEL_FACTION_TEMPLATE = UNIT_TYPE_LEVEL_FACTION_TEMPLATE, -- "Level %d %s (%s)"
+	UNIT_TYPE_LEVEL_TEMPLATE = UNIT_TYPE_LEVEL_TEMPLATE, -- "Level %d %s"
+	UNIT_TYPE_PLUS_LEVEL_TEMPLATE = UNIT_TYPE_PLUS_LEVEL_TEMPLATE, -- "Level %d Elite %s"
+}
 
 -- Backdrop template for Lua and XML
 -- Allows us to always set these templates, even in Classic.
@@ -74,7 +98,10 @@ local defaults = {
 		hideUnusedStats = IsRetail or nil, -- no such thing in the classics
 		hideMissingSetBonuses = true,
 		hidePvP = IsRetail, -- still useful on classic realms
-		hideFaction = true
+		hideFaction = true,
+		hideSpec = false,
+		hideHealthBar = false,
+		hideGuild = false
 	}
 }
 
@@ -164,8 +191,20 @@ ns.GetOptionsObject = function(self)
 					type = "header",
 					name = L["Unit Tooltips"]
 				},
-				hidePvP = {
+				hideGuild = {
 					order = 21,
+					width = "full",
+					name = L["Hide guilds."],
+					desc = L["Hides a unit's guild name."],
+					type = "toggle",
+					set = function(info,val)
+						ns:GetSettings().profile.hideGuild = val
+						ns:UpdateSettings()
+					end,
+					get = function(info) return ns:GetSettings().profile.hideGuild end
+				},
+				hidePvP = {
+					order = 22,
 					width = "full",
 					name = L["Hide PvP status."],
 					desc = L["Hides a unit's PvP status."],
@@ -177,7 +216,7 @@ ns.GetOptionsObject = function(self)
 					get = function(info) return ns:GetSettings().profile.hidePvP end
 				},
 				hideFaction = {
-					order = 22,
+					order = 23,
 					width = "full",
 					name = L["Hide factions."],
 					desc = L["Hides a unit's faction allegiance."],
@@ -187,6 +226,30 @@ ns.GetOptionsObject = function(self)
 						ns:UpdateSettings()
 					end,
 					get = function(info) return ns:GetSettings().profile.hideFaction end
+				},
+				hideSpec = {
+					order = 24,
+					width = "full",
+					name = L["Hide level, race, class & spec"],
+					desc = L["Hides a unit's level, class, race and specialization."],
+					type = "toggle",
+					set = function(info,val)
+						ns:GetSettings().profile.hideSpec = val
+						ns:UpdateSettings()
+					end,
+					get = function(info) return ns:GetSettings().profile.hideSpec end
+				},
+				hideHealthBar = {
+					order = 30,
+					width = "full",
+					name = L["Hide unit health bars."],
+					desc = L["Hides health bars from units and objects."],
+					type = "toggle",
+					set = function(info,val)
+						ns:GetSettings().profile.hideHealthBar = val
+						ns:UpdateSettings()
+					end,
+					get = function(info) return ns:GetSettings().profile.hideHealthBar end
 				}
 			}
 		}
@@ -204,6 +267,16 @@ end
 
 ns.UpdateSettings = function(self)
 	local db = self:GetSettings().profile
+
+	local shouldHookItems = function()
+		local db = self:GetSettings().profile
+		return db.hideMetRequirements or db.hideFullDurability or db.hideUnusedStats or db.hideMissingSetBonuses
+	end
+
+	local shouldHookUnits = function()
+		local db = self:GetSettings().profile
+		return db.hidePvP or db.hideFaction or db.hideSpec or db.hideHealthBar
+	end
 
 	if (db.hideBlizzardSellValue) then
 		if (WoW10) then
@@ -228,11 +301,11 @@ ns.UpdateSettings = function(self)
 		end
 	end
 
-	if (db.hideMetRequirements or db.hideFullDurability or db.hideUnusedStats or db.hideMissingSetBonuses) then
+	if (shouldHookItems()) then
 		if (WoW10) then
 			if (not self.itemHoked) then
 				TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, ...)
-					if (tooltips[tooltip] and (db.hideMetRequirements or db.hideFullDurability or db.hideUnusedStats or db.hideMissingSetBonuses)) then
+					if (tooltips[tooltip] and shouldHookItems()) then
 						self:OnTooltipSetItem(tooltip, ...)
 					end
 				end)
@@ -255,11 +328,11 @@ ns.UpdateSettings = function(self)
 		end
 	end
 
-	if (db.hidePvP or db.hideFaction) then
+	if (shouldHookUnits()) then
 		if (WoW10) then
 			if (not self.unitHooked) then
 				TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip, ...)
-					if (tooltips[tooltip] and (db.hidePvP or db.hideFaction)) then
+					if (tooltips[tooltip] and shouldHookUnits()) then
 						self:OnTooltipSetUnit(tooltip, ...)
 					end
 				end)
@@ -275,7 +348,6 @@ ns.UpdateSettings = function(self)
 	else
 		if (not WoW10) then
 			for tooltip in next,tooltips do
-				self:SecureHookScript(tooltip, "OnTooltipSetUnit", "OnTooltipSetUnit")
 				if (self:IsHooked(tooltip, "OnTooltipSetUnit")) then
 					self:Unhook(tooltip, "OnTooltipSetUnit")
 				end
@@ -287,7 +359,7 @@ end
 
 ns.OnSetTooltipMoney = function(self, tooltip, money, type, prefixText, suffixText)
 	if (tooltips[tooltip]) then
-		if (tooltip.hasMoney and prefixText and string_match(prefixText, L_SELL_PRICE)) then
+		if (tooltip.hasMoney and prefixText and string_match(prefixText, P[G.SELL_PRICE])) then
 			GameTooltip_ClearMoney(tooltip)
 
 			-- SetTooltipMoney adds a blank line, and this hook is called directly after,
@@ -306,7 +378,7 @@ end
 ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 	if (not tooltip) or (tooltip:IsForbidden()) then return end
 
-	local db = self.db.profile
+	local db = self:GetSettings()
 	local tipName = tooltip:GetName()
 	local foundLevel, foundSkill, foundDurability = false, false, false
 
@@ -326,7 +398,7 @@ ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 
 		if (db.hideMetRequirements and not foundLevel) then
 
-			local level = string_match(msg, L_ITEM_MIN_LEVEL)
+			local level = string_match(msg, P[G.ITEM_MIN_LEVEL])
 			if (level) then
 				local playerLevel = UnitLevel("player")
 				if (playerLevel >= tonumber(level)) then
@@ -337,7 +409,7 @@ ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 				foundLevel = true
 			end
 
-			--local skill = string_match(msg, L_ITEM_MIN_SKILL)
+			--local skill = string_match(msg, P[G.ITEM_MIN_SKILL])
 			--if (skill) then
 			--	_G[tipName.."TextLeft"..i]:SetText(nil)
 			--	_G[tipName.."TextRight"..i]:SetText(nil)
@@ -348,7 +420,7 @@ ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 		end
 
 		if (db.hideFullDurability and not foundDurability) then
-			local min,max = string_match(msg, L_DURABILITY_TEMPLATE)
+			local min,max = string_match(msg, P[G.DURABILITY_TEMPLATE])
 			if (min and max) then
 				if (min == max) then
 					local tipText = _G[tipName.."TextLeft"..i]
@@ -387,7 +459,7 @@ ns.OnTooltipSetItemClassic = function(self, tooltip)
 	--local name, link = tooltip.GetItem and tooltip:GetItem()
 	--if (not link) then return end
 
-	local db = self.db.profile
+	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
 	local foundLevel, foundSkill, foundDurability = false, false, false
@@ -400,7 +472,7 @@ ns.OnTooltipSetItemClassic = function(self, tooltip)
 
 		if (db.hideMetRequirements and not foundLevel) then
 
-			local level = string_match(msg, L_ITEM_MIN_LEVEL)
+			local level = string_match(msg, P[G.ITEM_MIN_LEVEL])
 			if (level) then
 				local playerLevel = UnitLevel("player")
 				if (playerLevel >= tonumber(level)) then
@@ -410,7 +482,7 @@ ns.OnTooltipSetItemClassic = function(self, tooltip)
 				foundLevel = true
 			end
 
-			--local skill = string_match(msg, L_ITEM_MIN_SKILL)
+			--local skill = string_match(msg, P[G.ITEM_MIN_SKILL])
 			--if (skill) then
 			--	_G[tipName.."TextLeft"..i]:SetText(nil)
 			--	_G[tipName.."TextRight"..i]:SetText(nil)
@@ -421,7 +493,7 @@ ns.OnTooltipSetItemClassic = function(self, tooltip)
 		end
 
 		if (db.hideFullDurability and not foundDurability) then
-			local min,max = string_match(msg, L_DURABILITY_TEMPLATE)
+			local min,max = string_match(msg, P[G.DURABILITY_TEMPLATE])
 			if (min and max) then
 				if (min == max) then
 					line:SetText("")
@@ -461,7 +533,7 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 		end
 	end
 
-	local db = self.db.profile
+	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
 	-- Assign data to 'type' and 'guid' fields.
@@ -472,8 +544,14 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 		TooltipUtil.SurfaceArgs(line)
 	end
 
-	local foundPvP, foundFaction = false, false
-	for i = #tooltipData.lines,1,-1 do
+	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
+		local line = _G[tipName.."TextLeft2"]
+		line:SetText("")
+		line:Hide()
+	end
+
+	local foundPvP, foundFaction, foundSpec = false, false, false
+	for i = #tooltipData.lines,2,-1 do
 		local line = tooltipData.lines[i]
 		local msg = line.leftText
 
@@ -497,8 +575,35 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 			end
 		end
 
-		if (db.hidePvP == foundPvP and db.hideFaction == foundFaction) then
+		if (db.hideSpec and not foundSpec) then
+			if (string_match(msg, P[G.LEVEL_GAINED]))
+			or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
+			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
+			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_TEMPLATE]))
+			or (string_match(msg, P[G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE])) then
+				line:SetText("")
+				line:Hide()
+				foundSpec = true
+			end
+		end
+
+		if (db.hidePvP == foundPvP and db.hideFaction == foundFaction and db.hideSpec == foundSpec) then
 			break
+		end
+	end
+
+	if (db.hideHealthBar) then
+		if (not self.hider) then
+			self.hider = CreateFrame("Frame", nil, GameTooltip)
+			self.hider:Hide()
+
+			-- Need this for compatibility with AzeriteUI
+			self.hider.GetUnit = function() return GameTooltip:GetUnit() end
+		end
+		GameTooltip.StatusBar:SetParent(self.hider)
+	else
+		if (self.hider and GameTooltip.StatusBar:GetParent() == self.hider) then
+			GameTooltip.StatusBar:SetParent(GameTooltip)
 		end
 	end
 
@@ -517,35 +622,72 @@ ns.OnTooltipSetUnitClassic = function(self, tooltip)
 		end
 	end
 
-	local db = self.db.profile
+	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
-	local foundPvP, foundFaction = false, false
+	local foundPvP, foundFaction, foundSpec = false, false, false
 
-	for i = tooltip:NumLines(),1,-1 do
-		local line = _G[tipName.."TextLeft"..i]
-		local msg = line and line:GetText()
+	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
+		local line = _G[tipName.."TextLeft2"]
+		line:SetText("")
+		line:Hide()
+	end
 
-		if (not msg) then break end
+	local numLines = tooltip:NumLines()
+	if (numLines >= 2) then
+		for i = numLines,2,-1 do
+			local line = _G[tipName.."TextLeft"..i]
+			local msg = line and line:GetText()
 
-		if (db.hidePvP and not foundPvP) then
-			if (msg == PVP) then
-				line:SetText("")
-				line:Hide()
-				foundPvP = true
+			if (not msg) then break end
+
+			if (db.hidePvP and not foundPvP) then
+				if (msg == PVP) then
+					line:SetText("")
+					line:Hide()
+					foundPvP = true
+				end
 			end
-		end
 
-		if (db.hideFaction and not foundFaction) then
-			if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE) then
-				line:SetText("")
-				line:Hide()
-				foundFaction = true
+			if (db.hideFaction and not foundFaction) then
+				if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE or (FACTION_NEUTRAL and msg == FACTION_NEUTRAL)) then
+					line:SetText("")
+					line:Hide()
+					foundFaction = true
+				end
 			end
-		end
 
-		if (db.hidePvP == foundPvP and db.hideFaction == foundFaction) then
-			break
+			if (db.hideSpec and not foundSpec) then
+				if (string_match(msg, P[G.LEVEL_GAINED]))
+				or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_LEVEL_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE])) then
+					line:SetText("")
+					line:Hide()
+					foundSpec = true
+				end
+			end
+
+			if (db.hidePvP == foundPvP and db.hideFaction == foundFaction and db.hideSpec == foundSpec) then
+				break
+			end
+
+		end
+	end
+
+	if (db.hideHealthBar) then
+		if (not self.hider) then
+			self.hider = CreateFrame("Frame", nil, GameTooltip)
+			self.hider:Hide()
+
+			-- Need this for compatibility with AzeriteUI
+			self.hider.GetUnit = function() return GameTooltip:GetUnit() end
+		end
+		GameTooltip.StatusBar:SetParent(self.hider)
+	else
+		if (self.hider and GameTooltip.StatusBar:GetParent() == self.hider) then
+			GameTooltip.StatusBar:SetParent(GameTooltip)
 		end
 	end
 
@@ -558,4 +700,5 @@ end
 
 ns.OnEnable = function(self)
 	self:UpdateSettings()
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", "UpdateSettings")
 end
