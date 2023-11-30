@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] 2023-11-30
+## [1.0.14-Release] 2023-11-30
 ### Added
 - Added options to hide unit health bars, unit guilds and unit spec/race/level/class.
 
