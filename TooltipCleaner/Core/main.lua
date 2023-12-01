@@ -551,39 +551,51 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 	end
 
 	local foundPvP, foundFaction, foundSpec = false, false, false
+
 	for i = #tooltipData.lines,2,-1 do
 		local line = tooltipData.lines[i]
 		local msg = line.leftText
 
 		if (not msg) then break end
 
-		if (db.hidePvP and not foundPvP) then
+		local processed
+
+		if (db.hidePvP and not foundPvP and not processed) then
 			if (msg == PVP) then
 				local tipText = _G[tipName.."TextLeft"..i]
 				tipText:SetText("")
 				tipText:Hide()
 				foundPvP = true
+				processed = true
 			end
 		end
 
-		if (db.hideFaction and not foundFaction) then
+		if (db.hideFaction and not foundFaction and not processed) then
 			if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE or msg == FACTION_NEUTRAL) then
 				local tipText = _G[tipName.."TextLeft"..i]
 				tipText:SetText("")
 				tipText:Hide()
 				foundFaction = true
+				processed = true
 			end
 		end
 
-		if (db.hideSpec and not foundSpec) then
+		if (db.hideSpec and not foundSpec and not processed) then
 			if (string_match(msg, P[G.LEVEL_GAINED]))
 			or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
 			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
 			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_TEMPLATE]))
 			or (string_match(msg, P[G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE])) then
-				line:SetText("")
-				line:Hide()
+				local tipText = _G[tipName.."TextLeft"..i]
+				tipText:SetText("")
+				tipText:Hide()
 				foundSpec = true
+				processed = true
+
+				-- In retail spec and classification is on the line after level
+				local tipText = _G[tipName.."TextLeft"..(i + 1)]
+				tipText:SetText("")
+				tipText:Hide()
 			end
 		end
 
@@ -641,23 +653,27 @@ ns.OnTooltipSetUnitClassic = function(self, tooltip)
 
 			if (not msg) then break end
 
+			local processed
+
 			if (db.hidePvP and not foundPvP) then
 				if (msg == PVP) then
 					line:SetText("")
 					line:Hide()
 					foundPvP = true
+					processed = true
 				end
 			end
 
-			if (db.hideFaction and not foundFaction) then
+			if (db.hideFaction and not foundFaction and not processed) then
 				if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE or (FACTION_NEUTRAL and msg == FACTION_NEUTRAL)) then
 					line:SetText("")
 					line:Hide()
 					foundFaction = true
+					processed = true
 				end
 			end
 
-			if (db.hideSpec and not foundSpec) then
+			if (db.hideSpec and not foundSpec and not processed) then
 				if (string_match(msg, P[G.LEVEL_GAINED]))
 				or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
 				or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
@@ -666,6 +682,7 @@ ns.OnTooltipSetUnitClassic = function(self, tooltip)
 					line:SetText("")
 					line:Hide()
 					foundSpec = true
+					processed = true
 				end
 			end
 
