@@ -382,73 +382,69 @@ ns.OnTooltipSetItem = function(self, tooltip, tooltipData)
 	local tipName = tooltip:GetName()
 	local foundLevel, foundSkill, foundDurability = false, false, false
 
-	-- Assign data to 'type' and 'guid' fields.
-	TooltipUtil.SurfaceArgs(tooltipData)
+	if (tooltipData) then
 
-	-- Assign data to 'leftText' fields.
-	for _,line in ipairs(tooltipData.lines) do
-		TooltipUtil.SurfaceArgs(line)
-	end
+		for i = #tooltipData.lines,1,-1 do
+			local line = tooltipData.lines[i]
+			local msg = line.leftText
 
-	for i = #tooltipData.lines,1,-1 do
-		local line = tooltipData.lines[i]
-		local msg = line.leftText
+			if (not msg) then break end
 
-		if (not msg) then break end
+			if (db.hideMetRequirements and not foundLevel) then
 
-		if (db.hideMetRequirements and not foundLevel) then
+				local level = string_match(msg, P[G.ITEM_MIN_LEVEL])
+				if (level) then
+					local playerLevel = UnitLevel("player")
+					if (playerLevel >= tonumber(level)) then
+						local tipText = _G[tipName.."TextLeft"..i]
+						tipText:SetText("")
+						tipText:Hide()
+					end
+					foundLevel = true
+				end
 
-			local level = string_match(msg, P[G.ITEM_MIN_LEVEL])
-			if (level) then
-				local playerLevel = UnitLevel("player")
-				if (playerLevel >= tonumber(level)) then
+				--local skill = string_match(msg, P[G.ITEM_MIN_SKILL])
+				--if (skill) then
+				--	_G[tipName.."TextLeft"..i]:SetText(nil)
+				--	_G[tipName.."TextRight"..i]:SetText(nil)
+				--	print("found skill level:", skill)
+				--	foundSkill = true
+				--end
+
+			end
+
+			if (db.hideFullDurability and not foundDurability) then
+				local min,max = string_match(msg, P[G.DURABILITY_TEMPLATE])
+				if (min and max) then
+					if (min == max) then
+						local tipText = _G[tipName.."TextLeft"..i]
+						tipText:SetText("")
+						tipText:Hide()
+					end
+					foundDurability = true
+				end
+			end
+
+			if (db.hideUnusedStats or db.hideMissingSetBonuses) then
+				local r, g, b = line.leftColor.r, line.leftColor.g, line.leftColor.b
+				if (r == g and g == b and r > 0.49 and r < 0.51) then
 					local tipText = _G[tipName.."TextLeft"..i]
-					tipText:SetText("")
-					tipText:Hide()
+					if (db.hideUnusedStats and string_match(msg, "^%+?%-?%d+%s+%w+")) then
+						tipText:SetText("")
+						tipText:Hide()
+					end
+					if (db.hideMissingSetBonuses and string_match(msg, "^%(%d+%)%s+.+")) then
+						tipText:SetText("")
+						tipText:Hide()
+					end
 				end
-				foundLevel = true
 			end
 
-			--local skill = string_match(msg, P[G.ITEM_MIN_SKILL])
-			--if (skill) then
-			--	_G[tipName.."TextLeft"..i]:SetText(nil)
-			--	_G[tipName.."TextRight"..i]:SetText(nil)
-			--	print("found skill level:", skill)
-			--	foundSkill = true
-			--end
-
-		end
-
-		if (db.hideFullDurability and not foundDurability) then
-			local min,max = string_match(msg, P[G.DURABILITY_TEMPLATE])
-			if (min and max) then
-				if (min == max) then
-					local tipText = _G[tipName.."TextLeft"..i]
-					tipText:SetText("")
-					tipText:Hide()
-				end
-				foundDurability = true
+			if (db.hideMetRequirements == foundLevel and db.hideFullDurability == foundDurability and not db.hideUnusedStats and not db.hideMissingSetBonuses) then
+				break
 			end
 		end
 
-		if (db.hideUnusedStats or db.hideMissingSetBonuses) then
-			local r, g, b = line.leftColor.r, line.leftColor.g, line.leftColor.b
-			if (r == g and g == b and r > 0.49 and r < 0.51) then
-				local tipText = _G[tipName.."TextLeft"..i]
-				if (db.hideUnusedStats and string_match(msg, "^%+?%-?%d+%s+%w+")) then
-					tipText:SetText("")
-					tipText:Hide()
-				end
-				if (db.hideMissingSetBonuses and string_match(msg, "^%(%d+%)%s+.+")) then
-					tipText:SetText("")
-					tipText:Hide()
-				end
-			end
-		end
-
-		if (db.hideMetRequirements == foundLevel and db.hideFullDurability == foundDurability and not db.hideUnusedStats and not db.hideMissingSetBonuses) then
-			break
-		end
 	end
 
 end
@@ -536,14 +532,6 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
-	-- Assign data to 'type' and 'guid' fields.
-	TooltipUtil.SurfaceArgs(tooltipData)
-
-	-- Assign data to 'leftText' fields.
-	for _,line in ipairs(tooltipData.lines) do
-		TooltipUtil.SurfaceArgs(line)
-	end
-
 	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
 		local line = _G[tipName.."TextLeft2"]
 		line:SetText("")
@@ -552,56 +540,60 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 
 	local foundPvP, foundFaction, foundSpec = false, false, false
 
-	for i = #tooltipData.lines,2,-1 do
-		local line = tooltipData.lines[i]
-		local msg = line.leftText
+	if (tooltipData) then
 
-		if (not msg) then break end
+		for i = #tooltipData.lines,2,-1 do
+			local line = tooltipData.lines[i]
+			local msg = line.leftText
 
-		local processed
+			if (not msg) then break end
 
-		if (db.hidePvP and not foundPvP and not processed) then
-			if (msg == PVP) then
-				local tipText = _G[tipName.."TextLeft"..i]
-				tipText:SetText("")
-				tipText:Hide()
-				foundPvP = true
-				processed = true
+			local processed
+
+			if (db.hidePvP and not foundPvP and not processed) then
+				if (msg == PVP) then
+					local tipText = _G[tipName.."TextLeft"..i]
+					tipText:SetText("")
+					tipText:Hide()
+					foundPvP = true
+					processed = true
+				end
+			end
+
+			if (db.hideFaction and not foundFaction and not processed) then
+				if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE or msg == FACTION_NEUTRAL) then
+					local tipText = _G[tipName.."TextLeft"..i]
+					tipText:SetText("")
+					tipText:Hide()
+					foundFaction = true
+					processed = true
+				end
+			end
+
+			if (db.hideSpec and not foundSpec and not processed) then
+				if (string_match(msg, P[G.LEVEL_GAINED]))
+				or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_LEVEL_TEMPLATE]))
+				or (string_match(msg, P[G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE])) then
+					local tipText = _G[tipName.."TextLeft"..i]
+					tipText:SetText("")
+					tipText:Hide()
+					foundSpec = true
+					processed = true
+
+					-- In retail spec and classification is on the line after level
+					local tipText = _G[tipName.."TextLeft"..(i + 1)]
+					tipText:SetText("")
+					tipText:Hide()
+				end
+			end
+
+			if (db.hidePvP == foundPvP and db.hideFaction == foundFaction and db.hideSpec == foundSpec) then
+				break
 			end
 		end
 
-		if (db.hideFaction and not foundFaction and not processed) then
-			if (msg == FACTION_ALLIANCE or msg == FACTION_HORDE or msg == FACTION_NEUTRAL) then
-				local tipText = _G[tipName.."TextLeft"..i]
-				tipText:SetText("")
-				tipText:Hide()
-				foundFaction = true
-				processed = true
-			end
-		end
-
-		if (db.hideSpec and not foundSpec and not processed) then
-			if (string_match(msg, P[G.LEVEL_GAINED]))
-			or (string_match(msg, P[G.UNIT_TYPE_LETHAL_LEVEL_TEMPLATE]))
-			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_FACTION_TEMPLATE]))
-			or (string_match(msg, P[G.UNIT_TYPE_LEVEL_TEMPLATE]))
-			or (string_match(msg, P[G.UNIT_TYPE_PLUS_LEVEL_TEMPLATE])) then
-				local tipText = _G[tipName.."TextLeft"..i]
-				tipText:SetText("")
-				tipText:Hide()
-				foundSpec = true
-				processed = true
-
-				-- In retail spec and classification is on the line after level
-				local tipText = _G[tipName.."TextLeft"..(i + 1)]
-				tipText:SetText("")
-				tipText:Hide()
-			end
-		end
-
-		if (db.hidePvP == foundPvP and db.hideFaction == foundFaction and db.hideSpec == foundSpec) then
-			break
-		end
 	end
 
 	if (db.hideHealthBar) then
