@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. Be aware th
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased] 2024-02-11
+### Fixed
+- The option to hide guild names have been removed from Classic Era as there are no guild names in Classic Era tooltips, so removing them actually removed whatever the second line was instead.
+
 ## [1.0.17-Release] 2024-02-07
 - Updated for WoW Client Patch 1.15.1.
 
