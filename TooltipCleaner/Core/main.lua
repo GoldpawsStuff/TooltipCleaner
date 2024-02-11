@@ -191,7 +191,7 @@ ns.GetOptionsObject = function(self)
 					type = "header",
 					name = L["Unit Tooltips"]
 				},
-				hideGuild = {
+				hideGuild = not IsClassic and {
 					order = 21,
 					width = "full",
 					name = L["Hide guilds."],
@@ -202,7 +202,7 @@ ns.GetOptionsObject = function(self)
 						ns:UpdateSettings()
 					end,
 					get = function(info) return ns:GetSettings().profile.hideGuild end
-				},
+				} or nil,
 				hidePvP = {
 					order = 22,
 					width = "full",
@@ -532,7 +532,7 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
-	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
+	if (not IsClassic) and (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
 		local line = _G[tipName.."TextLeft2"]
 		line:SetText("")
 		line:Hide()
