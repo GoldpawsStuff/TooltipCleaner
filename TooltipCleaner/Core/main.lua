@@ -532,7 +532,7 @@ ns.OnTooltipSetUnit = function(self, tooltip, tooltipData)
 	local db = self:GetSettings().profile
 	local tipName = tooltip:GetName()
 
-	if (not IsClassic) and (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
+	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
 		local line = _G[tipName.."TextLeft2"]
 		line:SetText("")
 		line:Hide()
@@ -631,11 +631,11 @@ ns.OnTooltipSetUnitClassic = function(self, tooltip)
 
 	local foundPvP, foundFaction, foundSpec = false, false, false
 
-	if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
-		local line = _G[tipName.."TextLeft2"]
-		line:SetText("")
-		line:Hide()
-	end
+	--if (db.hideGuild and UnitIsPlayer(unit) and GetGuildInfo(unit)) then
+	--	local line = _G[tipName.."TextLeft2"]
+	--	line:SetText("")
+	--	line:Hide()
+	--end
 
 	local numLines = tooltip:NumLines()
 	if (numLines >= 2) then
